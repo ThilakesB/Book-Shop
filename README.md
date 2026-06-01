@@ -86,13 +86,19 @@ Copy the environment file and fill in your values:
 cp .env.example .env
 ```
 
+Apply database migrations:
+
+```bash
+python manage.py migrate
+```
+
 Run the development server:
 
 ```bash
-flask run
-# or
-python app.py
+python manage.py runserver
 ```
+
+The backend will be available at `http://127.0.0.1:8000`.
 
 ### 3. Set up the frontend
 
