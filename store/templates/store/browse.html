@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Browse Books - Cyber Bookshop{% endblock %}
+
+{% block content %}
+<div class="row g-4 mt-2">
+    <!-- Left Sidebar: Filters (col-lg-3) -->
+    <aside class="col-lg-3">
+        <div class="glass-panel p-4 sticky-lg-top" style="top: 100px;">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary border-opacity-25">
+                <h1 class="h5 font-headings text-white mb-0"><i class="bi bi-funnel-fill text-info me-2"></i>Filter Shelf</h1>
+                <a href="{% url 'store:browse' %}" class="text-info fs-7 text-decoration-none">Reset All</a>
+            </div>
+            
+            <!-- Category Filtering -->
+            <div class="mb-4">
+                <h2 class="filter-title">Categories</h2>
+                <div class="d-flex flex-column gap-1">
+                    <a href="?search={{ search_query }}&price_min={{ price_min }}&price_max={{ price_max }}&sort={{ sort_by }}" 
+                       class="filter-list-item {% if not selected_category %}active{% endif %}">
+                        <span>All Categories</span>
+                        <i class="bi bi-chevron-right fs-8"></i>
+                    </a>
+                    {% for cat in categories %}
+                        <a href="?category={{ cat.id }}&search={{ search_query }}&price_min={{ price_min }}&price_max={{ price_max }}&sort={{ sort_by }}" 
+                           class="filter-list-item {% if selected_category == cat.id %}active{% endif %}">
+                            <span>{{ cat.name }}</span>
+                            <i class="bi bi-chevron-right fs-8"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Price Range Filtering -->
+            <div>
+                <h2 class="filter-title">Price Range ($)</h2>
+                <form method="GET" action="{% url 'store:browse' %}">
+                    <!-- Preserve search, category, and sorting values -->
+                    {% if search_query %}<input type="hidden" name="search" value="{{ search_query }}">{% endif %}
+                    {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+                    {% if sort_by %}<input type="hidden" name="sort" value="{{ sort_by }}">{% endif %}
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="price_min" class="visually-hidden">Min Price</label>
+                            <input type="number" step="0.01" class="form-control form-control-cyber" id="price_min" name="price_min" placeholder="Min" value="{{ price_min }}" aria-label="Minimum Price">
+                        </div>
+                        <div class="col-6">
+                            <label for="price_max" class="visually-hidden">Max Price</label>
+                            <input type="number" step="0.01" class="form-control form-control-cyber" id="price_max" name="price_max" placeholder="Max" value="{{ price_max }}" aria-label="Maximum Price">
+                        </div>
+                    </div>
+                    <button class="btn btn-neon w-100 btn-sm py-2" type="submit">Apply Prices</button>
+                </form>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Right Main Area: Results (col-lg-9) -->
+    <div class="col-lg-9">
+        <!-- Results stats and sorting -->
+        <div class="glass-panel p-3 mb-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+            <div class="text-muted fs-7">
+                Found <span class="text-white fw-bold">{{ books|length }}</span> book{% if books|length != 1 %}s{% endif %} 
+                {% if search_query %}for "<span class="text-info">{{ search_query }}</span>"{% endif %}
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted fs-7 text-nowrap">Sort By:</span>
+                <label for="sortSelector" class="visually-hidden">Sort Books</label>
+                <select class="form-select form-control-cyber py-1 px-3 fs-7" id="sortSelector" onchange="applySorting(this.value)" aria-label="Sort books option">
+                    <option value="featured" {% if sort_by == 'featured' %}selected{% endif %}>Featured</option>
+                    <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                    <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest Arrivals</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Books Grid -->
+        <div class="row g-4">
+            {% for book in books %}
+                <div class="col-md-4 col-sm-6">
+                    <div class="glass-panel book-card">
+                        <div class="book-cover-container">
+                            {% if book.is_featured %}
+                                <span class="custom-badge badge-featured">Featured</span>
+                            {% elif book.is_bestseller %}
+                                <span class="custom-badge" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">Bestseller</span>
+                            {% elif book.is_new_arrival %}
+                                <span class="custom-badge" style="background: linear-gradient(135deg, #ec4899, #db2777); color: white;">New</span>
+                            {% endif %}
+                            <img src="{{ book.cover_url }}" alt="{{ book.title }} Cover" class="book-cover">
+                        </div>
+                        <div class="p-4 d-flex flex-column flex-grow-1">
+                            <span class="text-info fs-8 text-uppercase fw-semibold mb-1">{{ book.category.name }}</span>
+                            <h3 class="h6 text-white font-headings text-truncate mb-1">
+                                <a href="{% url 'store:book_detail' book.id %}" class="text-white text-decoration-none hover-info" title="{{ book.title }}">{{ book.title }}</a>
+                            </h3>
+                            <p class="text-muted fs-7 text-truncate mb-3">By {{ book.author }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                <span class="fs-5 text-white fw-bold">${{ book.price }}</span>
+                                <button class="btn btn-glass btn-sm" onclick="addToCart({{ book.id }})" aria-label="Add {{ book.title }} to Cart">
+                                    <i class="bi bi-cart-plus me-1 text-info"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center text-muted py-5 my-5">
+                    <div class="fs-1 text-secondary mb-3"><i class="bi bi-search-heart"></i></div>
+                    <h2 class="h5 text-white font-headings">No books matched your criteria</h2>
+                    <p class="small text-muted mb-4">Try resetting filters, refining search terms, or checking other categories.</p>
+                    <a href="{% url 'store:browse' %}" class="btn btn-neon px-4">Reset All Filters</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handles sorting selector
+    function applySorting(val) {
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('sort', val);
+        window.location.search = urlParams.toString();
+    }
+</script>
+{% endblock %}

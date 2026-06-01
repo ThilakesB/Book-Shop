@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shopping Cart - Cyber Bookshop{% endblock %}
+
+{% block content %}
+<div class="border-bottom border-secondary border-opacity-25 pb-3 mb-4 mt-2">
+    <h1 class="h3 font-headings text-white"><i class="bi bi-cart-fill text-info me-2"></i>Shopping Cart</h1>
+</div>
+
+<div class="row g-4 {% if not cart_items %}d-none{% endif %}" id="cart-main-container">
+    <!-- Left Column: Items List -->
+    <div class="col-lg-8">
+        <div class="glass-panel overflow-hidden">
+            <div class="table-responsive">
+                <table class="table cart-table mb-0 text-white align-middle">
+                    <thead>
+                        <tr>
+                            <th>Book Details</th>
+                            <th class="text-center">Quantity</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-items-body">
+                        {% for item in cart_items %}
+                            <tr id="cart-row-{{ item.id }}" style="transition: opacity 0.4s ease, transform 0.4s ease;">
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded overflow-hidden flex-shrink-0" style="height: 80px; width: 55px; background: #1e1e30; display: flex; align-items: center; justify-content: center;">
+                                            <img src="{{ item.book.cover_url }}" alt="{{ item.book.title }} Cover" style="height: 90%; object-fit: cover;">
+                                        </div>
+                                        <div>
+                                            <h2 class="h6 text-white font-headings mb-1" style="font-size: 0.95rem;">
+                                                <a href="{% url 'store:book_detail' item.book.id %}" class="text-white text-decoration-none hover-info">{{ item.book.title }}</a>
+                                            </h2>
+                                            <p class="text-muted mb-0 small">By {{ item.book.author }}</p>
+                                            <p class="text-info mb-0 small fw-bold mt-1">${{ item.book.price }} each</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                
+                                <td class="text-center">
+                                    <div class="quantity-selector mx-auto">
+                                        <button class="quantity-btn" onclick="updateQtyAJAX({{ item.id }}, -1)" aria-label="Decrease quantity">
+                                            <i class="bi bi-minus-lg"></i>
+                                        </button>
+                                        <input type="number" id="qty-{{ item.id }}" value="{{ item.quantity }}" min="1" class="quantity-input" onchange="updateQtyDirect({{ item.id }}, this.value)" aria-label="Set quantity">
+                                        <button class="quantity-btn" onclick="updateQtyAJAX({{ item.id }}, 1)" aria-label="Increase quantity">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                
+                                <td class="text-end text-white fw-semibold" id="subtotal-{{ item.id }}">
+                                    ${{ item.total_price }}
+                                </td>
+                                
+                                <td class="text-center">
+                                    <button class="btn btn-link text-danger hover-glow p-1" onclick="removeItemAJAX({{ item.id }})" aria-label="Remove {{ item.book.title }} from cart">
+                                        <i class="bi bi-trash3-fill fs-5"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <a href="{% url 'store:browse' %}" class="btn btn-glass">
+                <i class="bi bi-arrow-left me-2"></i>Continue Shopping
+            </a>
+        </div>
+    </div>
+    
+    <!-- Right Column: Order Summary -->
+    <div class="col-lg-4">
+        <div class="glass-panel p-4 sticky-lg-top" style="top: 100px;">
+            <h2 class="h5 font-headings text-white mb-4 pb-2 border-bottom border-secondary border-opacity-25">Order Summary</h2>
+            
+            <div class="d-flex justify-content-between mb-3 fs-7">
+                <span class="text-muted">Items Subtotal</span>
+                <span class="text-white fw-bold" id="summary-subtotal">${{ subtotal }}</span>
+            </div>
+            
+            <div class="d-flex justify-content-between mb-3 fs-7">
+                <span class="text-muted">Delivery Charges</span>
+                <span class="text-info" id="summary-delivery">${{ delivery_fee }}</span>
+            </div>
+            
+            <hr class="border-secondary opacity-25 my-3">
+            
+            <div class="d-flex justify-content-between mb-4">
+                <span class="text-white fw-bold">Grand Total</span>
+                <span class="text-white fw-bold fs-4" id="summary-total">${{ grand_total }}</span>
+            </div>
+            
+            <a href="{% url 'store:checkout' %}" class="btn btn-neon w-100 py-3 fs-6">
+                <i class="bi bi-credit-card-2-back-fill me-2"></i>Proceed to Checkout
+            </a>
+            
+            <div class="text-center mt-3">
+                <span class="text-muted small"><i class="bi bi-shield-check text-info me-1"></i>Secure dummy sandbox sandbox</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Empty State Container -->
+<div class="text-center text-muted py-5 my-5 {% if cart_items %}d-none{% endif %}" id="cart-empty-container">
+    <div class="fs-1 text-secondary mb-3"><i class="bi bi-bag-heart"></i></div>
+    <h2 class="h4 text-white font-headings">Your shopping cart is empty</h2>
+    <p class="small text-muted mb-4 pe-lg-5 ps-lg-5">Looks like you haven't added any books to your cart yet. Explore our selections and populate your shelf!</p>
+    <a href="{% url 'store:browse' %}" class="btn btn-neon px-5 py-3 fs-6">
+        <i class="bi bi-compass-fill me-2"></i>Explore Masterpieces
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Adjusts quantity using AJAX
+    function updateQtyAJAX(itemId, amount) {
+        const inputField = document.getElementById(`qty-${itemId}`);
+        let currentQty = parseInt(inputField.value) || 1;
+        currentQty += amount;
+        if (currentQty < 1) currentQty = 1;
+        
+        sendUpdateAJAX(itemId, currentQty);
+    }
+
+    // Handles typing a quantity directly
+    function updateQtyDirect(itemId, val) {
+        let quantity = parseInt(val) || 1;
+        if (quantity < 1) quantity = 1;
+        
+        sendUpdateAJAX(itemId, quantity);
+    }
+
+    // Dispatches AJAX to update cart items
+    function sendUpdateAJAX(itemId, qty) {
+        const formData = new FormData();
+        formData.append('item_id', itemId);
+        formData.append('quantity', qty);
+        formData.append('csrfmiddlewaretoken', getCSRFToken());
+
+        fetch("{% url 'store:update_cart' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update badge count
+                updateNavbarBadge(data.cart_count);
+                
+                if (data.removed) {
+                    animateRowRemoval(itemId);
+                } else {
+                    // Update input value
+                    document.getElementById(`qty-${itemId}`).value = qty;
+                    // Update row subtotal
+                    document.getElementById(`subtotal-${itemId}`).textContent = data.item_subtotal;
+                }
+                
+                // Update order summary
+                updateSummaryPrices(data.subtotal, data.delivery_fee, data.grand_total);
+                
+                if (data.cart_count === 0) {
+                    showEmptyCartState();
+                }
+            } else {
+                showNotification("Could not update cart quantity.", false);
+            }
+        })
+        .catch(error => {
+            showNotification("Error connecting to server.", false);
+            console.error('Error:', error);
+        });
+    }
+
+    // Handles item deletion using AJAX
+    function removeItemAJAX(itemId) {
+        const formData = new FormData();
+        formData.append('item_id', itemId);
+        formData.append('csrfmiddlewaretoken', getCSRFToken());
+
+        fetch("{% url 'store:remove_from_cart' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update badge count
+                updateNavbarBadge(data.cart_count);
+                // Animate row removal
+                animateRowRemoval(itemId);
+                // Update order summary
+                updateSummaryPrices(data.subtotal, data.delivery_fee, data.grand_total);
+                
+                if (data.cart_count === 0) {
+                    showEmptyCartState();
+                }
+            } else {
+                showNotification("Could not remove item.", false);
+            }
+        })
+        .catch(error => {
+            showNotification("Error connecting to server.", false);
+            console.error('Error:', error);
+        });
+    }
+
+    // Helper: update navbar cart badge
+    function updateNavbarBadge(count) {
+        const badge = document.getElementById('cart-badge-count');
+        badge.textContent = count;
+        if (count > 0) {
+            badge.classList.remove('d-none');
+        } else {
+            badge.classList.add('d-none');
+        }
+    }
+
+    // Helper: update price totals panel
+    function updateSummaryPrices(subtotal, delivery, total) {
+        document.getElementById('summary-subtotal').textContent = subtotal;
+        document.getElementById('summary-delivery').textContent = delivery;
+        document.getElementById('summary-total').textContent = total;
+    }
+
+    // Helper: beautiful row fade out
+    function animateRowRemoval(itemId) {
+        const row = document.getElementById(`cart-row-${itemId}`);
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            row.remove();
+        }, 400);
+    }
+
+    // Helper: show empty state if item count drops to 0
+    function showEmptyCartState() {
+        document.getElementById('cart-main-container').classList.add('d-none');
+        document.getElementById('cart-empty-container').classList.remove('d-none');
+    }
+</script>
+{% endblock %}

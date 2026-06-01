@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dummy Checkout - Cyber Bookshop{% endblock %}
+
+{% block content %}
+<div class="border-bottom border-secondary border-opacity-25 pb-3 mb-4 mt-2">
+    <h1 class="h3 font-headings text-white"><i class="bi bi-credit-card-2-back-fill text-info me-2"></i>Secure Sandbox Checkout</h1>
+</div>
+
+<form method="POST" action="{% url 'store:checkout' %}" class="needs-validation" novalidate id="checkoutForm">
+    {% csrf_token %}
+    <div class="row g-4">
+        <!-- Left Side: Forms (col-lg-7) -->
+        <div class="col-lg-7">
+            <!-- Billing Details -->
+            <div class="glass-panel p-4 mb-4">
+                <h2 class="h5 font-headings text-white mb-4 pb-2 border-bottom border-secondary border-opacity-25">1. Shipping Information</h2>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label-cyber">Full Name</label>
+                        <input type="text" class="form-control form-control-cyber" id="name" name="name" required placeholder="John Doe">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label-cyber">Email Address</label>
+                        <input type="email" class="form-control form-control-cyber" id="email" name="email" required placeholder="john@example.com">
+                    </div>
+                    <div class="col-12">
+                        <label for="address" class="form-label-cyber">Delivery Address</label>
+                        <input type="text" class="form-control form-control-cyber" id="address" name="address" required placeholder="123 Coding Street">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="city" class="form-label-cyber">City</label>
+                        <input type="text" class="form-control form-control-cyber" id="city" name="city" required placeholder="Silicon Valley">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="zip_code" class="form-label-cyber">Zip Code</label>
+                        <input type="text" class="form-control form-control-cyber" id="zip_code" name="zip_code" required placeholder="94016">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Method -->
+            <div class="glass-panel p-4">
+                <h2 class="h5 font-headings text-white mb-4 pb-2 border-bottom border-secondary border-opacity-25">2. Payment (Mock Sandbox)</h2>
+                
+                <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-5 text-white fs-7 mb-4">
+                    <i class="bi bi-info-circle-fill me-2 text-info fs-6"></i> This is a dummy sandbox checkout. No real money or transactions are processed. Feel free to use test details.
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="card_num" class="form-label-cyber">Card Number</label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control form-control-cyber" id="card_num" required placeholder="4242 •••• •••• 4242" maxlength="19" oninput="formatCard(this)">
+                            <i class="bi bi-credit-card position-absolute end-0 top-50 translate-middle-y text-muted me-3 fs-5"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="card_expiry" class="form-label-cyber">Expiration Date</label>
+                        <input type="text" class="form-control form-control-cyber" id="card_expiry" required placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this)">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="card_cvv" class="form-label-cyber">CVV</label>
+                        <input type="password" class="form-control form-control-cyber" id="card_cvv" required placeholder="•••" maxlength="3">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side: Order Review Summary (col-lg-5) -->
+        <div class="col-lg-5">
+            <div class="glass-panel p-4 sticky-lg-top" style="top: 100px;">
+                <h2 class="h5 font-headings text-white mb-4 pb-2 border-bottom border-secondary border-opacity-25">Review Your Order</h2>
+                
+                <div class="d-flex justify-content-between mb-3 fs-7">
+                    <span class="text-muted">Cart Subtotal</span>
+                    <span class="text-white fw-semibold">${{ subtotal }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between mb-3 fs-7">
+                    <span class="text-muted">Delivery Charges</span>
+                    <span class="text-info">${{ delivery_fee }}</span>
+                </div>
+                
+                <hr class="border-secondary opacity-25 my-3">
+                
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="text-white fw-bold">Order Total</span>
+                    <span class="text-white fw-bold fs-4">${{ grand_total }}</span>
+                </div>
+                
+                <button type="submit" class="btn btn-accent w-100 py-3 fs-6" id="submitOrderBtn">
+                    <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="submitSpinner"></span>
+                    <i class="bi bi-shield-lock-fill me-2"></i>Complete Mock Transaction
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Format card number: Add space every 4 digits
+    function formatCard(el) {
+        let v = el.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+        let matches = v.match(/\d{4,16}/g);
+        let match = matches && matches[0] || '';
+        let parts = [];
+
+        for (let i = 0, len = match.length; i < len; i += 4) {
+            parts.push(match.substring(i, i + 4));
+        }
+
+        if (parts.length > 0) {
+            el.value = parts.join(' ');
+        } else {
+            el.value = v;
+        }
+    }
+
+    // Format Expiry: Add slash MM/YY
+    function formatExpiry(el) {
+        let v = el.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+        if (v.length >= 2) {
+            el.value = v.substring(0, 2) + '/' + v.substring(2, 4);
+        } else {
+            el.value = v;
+        }
+    }
+
+    // Front-end Bootstrap Form Validation and Loading state
+    (() => {
+        'use strict'
+        const form = document.getElementById('checkoutForm');
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                showNotification("Please fill in all the required transaction details.", false);
+            } else {
+                // Form is valid: Show spinner loader
+                const submitBtn = document.getElementById('submitOrderBtn');
+                const spinner = document.getElementById('submitSpinner');
+                submitBtn.disabled = true;
+                spinner.classList.remove('d-none');
+            }
+            form.classList.add('was-validated');
+        }, false);
+    })();
+</script>
+{% endblock %}

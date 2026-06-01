@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order Successful - Cyber Bookshop{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-lg-7 text-center">
+        <div class="glass-panel p-5">
+            <!-- Animated Success Checkmark -->
+            <div class="success-checkmark">
+                <i class="bi bi-shield-fill-check"></i>
+            </div>
+            
+            <h1 class="text-white font-headings display-6 mb-2">Order Confirmed!</h1>
+            <p class="text-info fs-5 mb-5">Your mock transaction has been successfully processed.</p>
+            
+            <!-- Order Details Receipt -->
+            <div class="glass-panel p-4 text-start mb-5" style="background: rgba(255, 255, 255, 0.02);">
+                <h2 class="h6 text-muted text-uppercase fw-bold mb-4 pb-2 border-bottom border-secondary border-opacity-25" style="letter-spacing: 0.05em;">Transaction Receipt</h2>
+                
+                <div class="row g-3 fs-7">
+                    <div class="col-sm-4 text-muted">Customer Name</div>
+                    <div class="col-sm-8 text-white fw-semibold">{{ receipt_name }}</div>
+                    
+                    {% if receipt_email %}
+                        <div class="col-sm-4 text-muted">Email Address</div>
+                        <div class="col-sm-8 text-white fw-semibold">{{ receipt_email }}</div>
+                    {% endif %}
+                    
+                    {% if receipt_address %}
+                        <div class="col-sm-4 text-muted">Shipping Location</div>
+                        <div class="col-sm-8 text-white fw-semibold">{{ receipt_address }}</div>
+                    {% endif %}
+                    
+                    <div class="col-sm-4 text-muted">Order Total</div>
+                    <div class="col-sm-8 text-info fw-bold fs-6">{{ receipt_total }}</div>
+                </div>
+            </div>
+            
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                <a href="{% url 'store:home' %}" class="btn btn-neon px-4 py-3">
+                    <i class="bi bi-house-fill me-2"></i>Back to Homepage
+                </a>
+                <a href="{% url 'store:browse' %}" class="btn btn-glass px-4 py-3">
+                    <i class="bi bi-compass-fill me-2"></i>Explore More Books
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

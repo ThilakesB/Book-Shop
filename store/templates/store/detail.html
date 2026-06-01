@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ book.title }} - Cyber Bookshop{% endblock %}
+
+{% block content %}
+<div class="row g-5 mt-2">
+    <!-- Left Column: Cover Showcase -->
+    <div class="col-lg-4 col-md-5 text-center">
+        <div class="glass-panel p-4 d-inline-block position-relative shadow-lg" style="border-radius: 20px;">
+            <div class="book-cover-container rounded shadow-lg overflow-hidden" style="height: 380px; width: 260px; background: linear-gradient(135deg, #1e1e30, #0a0a0f);">
+                <img src="{{ book.cover_url }}" alt="{{ book.title }} Cover" class="img-fluid" style="height: 90%; object-fit: cover; border-radius: 6px;">
+            </div>
+            
+            {% if book.is_featured or book.is_bestseller %}
+                <span class="custom-badge badge-featured mt-2 d-inline-block position-static px-3 py-1">
+                    {% if book.is_featured %}Featured Selection{% else %}Bestseller{% endif %}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Right Column: Book Details -->
+    <div class="col-lg-8 col-md-7">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="badge bg-secondary border border-secondary border-opacity-50 text-uppercase px-3 py-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                {{ book.category.name }}
+            </span>
+            {% if book.is_new_arrival %}
+                <span class="badge bg-danger text-uppercase px-3 py-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">New Arrival</span>
+            {% endif %}
+        </div>
+        
+        <h1 class="text-white font-headings mb-1 display-5">{{ book.title }}</h1>
+        <p class="text-info fs-5 mb-4">By {{ book.author }}</p>
+        
+        <div class="glass-panel p-4 mb-4">
+            <h2 class="h6 text-muted text-uppercase fw-bold mb-3" style="letter-spacing: 0.05em;">Description</h2>
+            <p class="text-main mb-0" style="line-height: 1.6;">{{ book.description }}</p>
+        </div>
+        
+        <div class="row align-items-center g-4 mb-5">
+            <div class="col-auto">
+                <span class="fs-2 text-white fw-bold">${{ book.price }}</span>
+            </div>
+            
+            <div class="col-auto">
+                <!-- Interactive Quantity Selection -->
+                <div class="quantity-selector">
+                    <button class="quantity-btn" onclick="adjustQty(-1)" aria-label="Decrease Quantity">
+                        <i class="bi bi-dash-lg"></i>
+                    </button>
+                    <input type="number" id="qty-field" value="1" min="1" max="100" class="quantity-input" aria-label="Book Quantity">
+                    <button class="quantity-btn" onclick="adjustQty(1)" aria-label="Increase Quantity">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-auto flex-grow-1 flex-md-grow-0">
+                <button class="btn btn-neon btn-lg w-100 px-5" onclick="triggerAddToCart()">
+                    <i class="bi bi-bag-plus-fill me-2"></i>Add To Cart
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI-Powered Book Summary Section -->
+<section class="mt-5">
+    <div class="border-bottom border-secondary border-opacity-25 pb-3 mb-4">
+        <h2 class="h3 font-headings text-white d-flex align-items-center">
+            <i class="bi bi-cpu text-info me-2 fs-4"></i>Google Gemini AI Book Summary
+        </h2>
+        <p class="text-muted mb-0 small">Get instant smart overview, key themes, and review recommendation generated dynamically by advanced artificial intelligence.</p>
+    </div>
+    
+    <!-- Gemini AJAX Container -->
+    <div class="glass-panel p-4" style="border-radius: 16px;">
+        <div id="aiSummaryBox">
+            <!-- Shimmer Skeleton Loading State -->
+            <div id="aiShimmerLoader">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="ai-badge shimmer me-2" style="width: 150px; height: 24px;"></span>
+                </div>
+                <div class="shimmer shimmer-block" style="width: 90%;"></div>
+                <div class="shimmer shimmer-block" style="width: 95%;"></div>
+                <div class="shimmer shimmer-block" style="width: 80%;"></div>
+                <div class="shimmer shimmer-block-large mt-4"></div>
+            </div>
+            <!-- Dynamic Content Output -->
+            <div id="aiSummaryContent" class="d-none"></div>
+        </div>
+    </div>
+</section>
+
+<!-- Related Selections -->
+<section class="mt-5 mb-5">
+    <div class="border-bottom border-secondary border-opacity-25 pb-3 mb-4">
+        <h2 class="h3 font-headings text-white"><i class="bi bi-compass text-info me-2"></i>More in {{ book.category.name }}</h2>
+    </div>
+    
+    <div class="row g-4">
+        {% for rel in related_books %}
+            <div class="col-md-3 col-sm-6">
+                <div class="glass-panel book-card">
+                    <div class="book-cover-container">
+                        <img src="{{ rel.cover_url }}" alt="{{ rel.title }} Cover" class="book-cover">
+                    </div>
+                    <div class="p-4 d-flex flex-column flex-grow-1">
+                        <h3 class="h6 text-white font-headings text-truncate mb-1">
+                            <a href="{% url 'store:book_detail' rel.id %}" class="text-white text-decoration-none hover-info" title="{{ rel.title }}">{{ rel.title }}</a>
+                        </h3>
+                        <p class="text-muted fs-7 text-truncate mb-3">By {{ rel.author }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <span class="fs-6 text-white fw-bold">${{ rel.price }}</span>
+                            <button class="btn btn-glass btn-sm" onclick="addToCart({{ rel.id }})" aria-label="Add {{ rel.title }} to Cart">
+                                <i class="bi bi-cart-plus me-1 text-info"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center text-muted py-3">
+                <p class="small">No other books in this category.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handles Quantity Adjustment
+    function adjustQty(amount) {
+        const qtyField = document.getElementById('qty-field');
+        let currentVal = parseInt(qtyField.value) || 1;
+        currentVal += amount;
+        if (currentVal < 1) currentVal = 1;
+        qtyField.value = currentVal;
+    }
+
+    // Handles Adding to Cart with custom quantity
+    function triggerAddToCart() {
+        const qty = parseInt(document.getElementById('qty-field').value) || 1;
+        addToCart({{ book.id }}, qty);
+    }
+
+    // Dynamic Markdown-to-HTML parser for AI Summary
+    function parseMarkdownToHTML(mdText) {
+        let html = mdText
+            // Double linebreaks to paragraphs
+            .replace(/\n\n/g, '</p><p>')
+            // Headers ### title
+            .replace(/###\s+(.*)/g, '<h3 class="text-info font-headings mt-4 mb-3 fs-5"><i class="bi bi-chevron-double-right me-2 text-primary"></i>$1</h3>')
+            // Bold **text**
+            .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+            // Bullet items - item
+            .replace(/^\s*-\s+(.*)/gm, '<li class="text-muted mb-2">$1</li>')
+            // Clean orphan lists
+            .replace(/(<li.*<\/li>)/gs, '<ul class="ps-3 my-3">$1</ul>');
+
+        // Wrap the whole content in base paragraphs
+        return '<div class="ai-summary-container"><span class="ai-badge mb-3"><i class="bi bi-stars"></i> Gemini AI Intelligence</span><p>' + html + '</p></div>';
+    }
+
+    // Fetch Google Gemini AI Summary on Load
+    document.addEventListener("DOMContentLoaded", function() {
+        fetch("{% url 'store:ai_summary' book.id %}")
+            .then(response => response.json())
+            .then(data => {
+                const shimmer = document.getElementById('aiShimmerLoader');
+                const content = document.getElementById('aiSummaryContent');
+                
+                if (data.summary) {
+                    content.innerHTML = parseMarkdownToHTML(data.summary);
+                    shimmer.classList.add('d-none');
+                    content.classList.remove('d-none');
+                } else {
+                    content.innerHTML = `<div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-5 text-white">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> Failed to generate AI summary for this book. Please try again later.
+                    </div>`;
+                    shimmer.classList.add('d-none');
+                    content.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error("AI Summary error:", error);
+                const shimmer = document.getElementById('aiShimmerLoader');
+                const content = document.getElementById('aiSummaryContent');
+                content.innerHTML = `<div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-5 text-white">
+                    <i class="bi bi-x-circle-fill me-2"></i> Error connecting to AI generation service. Check your connection or API configuration.
+                </div>`;
+                shimmer.classList.add('d-none');
+                content.classList.remove('d-none');
+            });
+    });
+</script>
+{% endblock %}
