@@ -184,15 +184,4 @@ Please follow the existing code style and write tests for new features.
 
 This project is licensed under the [MIT License](LICENSE).
 
----
 
-## 📬 Contact
-
-Have questions or feedback? Reach out:
-
-- GitHub: [@your-username](https://github.com/your-username)
-- Email: your@email.com
-
----
-
-> *"A reader lives a thousand lives before he dies. The man who never reads lives only one."* — George R.R. Martin
